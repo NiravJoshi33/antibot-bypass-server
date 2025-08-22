@@ -33,4 +33,4 @@ class ScrapeResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     version: str = AppData.app_version
-    available_scrapers: List[ScraperType] = [ScraperType.BRIGHTDATA_CDP]
+    available_scrapers: List[str] = [ScraperType.BRIGHTDATA_CDP]

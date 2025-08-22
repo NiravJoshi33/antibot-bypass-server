@@ -20,10 +20,10 @@ class Settings(BaseSettings):
     def validate_brightdata_cdp_endpoint(cls, v: str) -> str:
         if not v or v == "":
             raise ValueError("BRIGHTDATA_CDP_ENDPOINT is required")
-        if not v.startswith("https://"):
-            raise ValueError("BRIGHTDATA_CDP_ENDPOINT must start with https://")
-        if not v.endswith("/"):
-            raise ValueError("BRIGHTDATA_CDP_ENDPOINT must end with /")
+        if not (v.startswith("https://") or v.startswith("wss://")):
+            raise ValueError(
+                "BRIGHTDATA_CDP_ENDPOINT must start with https:// or wss://"
+            )
         return v
 
 
