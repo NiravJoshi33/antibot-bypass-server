@@ -134,7 +134,7 @@ class BrightDataCDPScraper(BaseScraper):
                 f"Set viewport size to viewport: {viewport['width']}x{viewport['height']}"
             )
 
-            random_delay = random.uniform(8.0, 25.0)
+            random_delay = random.uniform(3.0, 8.0)
             logger.debug(
                 f"Waiting for {random_delay} seconds before navigating to {url}"
             )
@@ -145,8 +145,131 @@ class BrightDataCDPScraper(BaseScraper):
             await page.wait_for_timeout(5000)
 
             if selector_to_wait_for:
+                # Check for access denied BEFORE waiting for selector
+                page_title = await page.title()
+                if "access denied" in page_title.lower():
+                    logger.warning(
+                        f"⚠️ Access denied detected for {url} - skipping selector wait"
+                    )
+                    raise Exception(f"Access denied: {page_title}")
+
+                # Check content length - if too short, likely an error page
+                content = await page.content()
+                if len(content) < 2000:  # Most business pages are much longer
+                    logger.warning(
+                        f"⚠️ Page content too short ({len(content)} chars) - likely error page"
+                    )
+                    raise Exception(
+                        f"Page content too short: {len(content)} characters"
+                    )
+
+                # Now proceed with normal selector waiting
                 logger.info(f"Waiting for selector: {selector_to_wait_for}")
-                await page.wait_for_selector(selector_to_wait_for, timeout=timeout)
+
+                # Add comprehensive logging before waiting for selector
+                try:
+                    # Log page title and URL
+                    page_title = await page.title()
+                    current_url = page.url
+                    logger.info(
+                        f"Page title: '{page_title}' | Current URL: {current_url}"
+                    )
+
+                    # Log page content length
+                    content_before = await page.content()
+                    logger.info(
+                        f"Page content length before selector wait: {len(content_before)} characters"
+                    )
+
+                    # Log if selector exists in DOM (even if not visible)
+                    selector_exists = await page.query_selector(selector_to_wait_for)
+                    if selector_exists:
+                        logger.info(
+                            f"✅ Selector '{selector_to_wait_for}' found in DOM"
+                        )
+                        # Check if it's visible
+                        is_visible = await selector_exists.is_visible()
+                        logger.info(f"Selector visibility: {is_visible}")
+                    else:
+                        logger.warning(
+                            f"❌ Selector '{selector_to_wait_for}' NOT found in DOM"
+                        )
+
+                        # Log alternative selectors that might exist
+                        alternative_selectors = [
+                            "h1",
+                            ".title",
+                            "[class*='title']",
+                            "[class*='Title']",
+                        ]
+                        for alt_selector in alternative_selectors:
+                            alt_element = await page.query_selector(alt_selector)
+                            if alt_element:
+                                alt_text = await alt_element.text_content()
+                                logger.info(
+                                    f"Alternative selector '{alt_selector}' found with text: '{alt_text[:100]}...'"
+                                )
+
+                    # Log page HTML structure around where we expect the title
+                    try:
+                        # Look for any h1 elements
+                        h1_elements = await page.query_selector_all("h1")
+                        logger.info(f"Found {len(h1_elements)} h1 elements on page")
+                        for i, h1 in enumerate(h1_elements):
+                            h1_text = await h1.text_content()
+                            h1_class = await h1.get_attribute("class")
+                            logger.info(
+                                f"H1[{i}]: class='{h1_class}', text='{h1_text[:100]}...'"
+                            )
+                    except Exception as e:
+                        logger.warning(f"Error checking h1 elements: {e}")
+
+                    # Now wait for the selector with timeout
+                    await page.wait_for_selector(selector_to_wait_for, timeout=timeout)
+                    logger.info(
+                        f"✅ Selector '{selector_to_wait_for}' successfully found and visible"
+                    )
+
+                except Exception as e:
+                    logger.error(
+                        f"❌ Selector '{selector_to_wait_for}' timeout or error: {e}"
+                    )
+
+                    # Log final page state for debugging
+                    try:
+                        final_title = await page.title()
+                        final_url = page.url
+                        final_content = await page.content()
+
+                        logger.error(f"=== PAGE STATE AT TIMEOUT ===")
+                        logger.error(f"Final page title: '{final_title}'")
+                        logger.error(f"Final URL: {final_url}")
+                        logger.error(
+                            f"Final content length: {len(final_content)} characters"
+                        )
+
+                        # Log first 1000 characters of content for debugging
+                        content_preview = final_content[:1000]
+                        logger.error(f"Content preview: {content_preview}")
+
+                        # Check if page has any content at all
+                        if len(final_content) < 1000:
+                            logger.error(
+                                f"⚠️ Page content seems very short - possible loading issue"
+                            )
+
+                        # Log any error messages or challenge indicators
+                        if "error" in final_content.lower():
+                            logger.error("⚠️ Page contains error messages")
+                        if "challenge" in final_content.lower():
+                            logger.error("⚠️ Page contains challenge indicators")
+                        if "access denied" in final_content.lower():
+                            logger.error("⚠️ Page shows access denied")
+
+                    except Exception as log_error:
+                        logger.error(f"Error logging final page state: {log_error}")
+
+                    raise e
 
             await page.wait_for_timeout(2000)
 
@@ -154,7 +277,7 @@ class BrightDataCDPScraper(BaseScraper):
 
             logger.info("Waiting for page to stabilize...")
             try:
-                await page.wait_for_load_state("networkidle", timeout=15000)
+                await page.wait_for_load_state("networkidle", timeout=5000)
             except Exception:
                 logger.error("Network idle timeout - continuing anyway")
 
@@ -165,7 +288,9 @@ class BrightDataCDPScraper(BaseScraper):
             # Handle anti-bot challenges
             if "chlgeId" in content or "challenge" in content.lower():
                 logger.info(f"Anti-bot challenge detected for {url}")
-                content = await self._handle_challenge(page)
+                content = await self._handle_challenge(
+                    page, selector_to_wait_for, timeout
+                )
 
             content_length = len(content)
             logger.info(f"✅ Content length: {content_length} characters")
@@ -227,13 +352,13 @@ class BrightDataCDPScraper(BaseScraper):
         except Exception as e:
             logger.warning(f"Human behavior simulation failed: {e}")
 
-    async def _handle_challenge(self, page):
+    async def _handle_challenge(self, page, selector_to_wait_for, timeout) -> str:
         """Handle anti-bot challenges using staged waiting strategy"""
         logger.info("Using staged waiting strategy to resolve challenge...")
 
         for stage in range(3):
             logger.info(f"Challenge resolution stage {stage + 1}/3...")
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(4000)
 
             try:
                 await page.wait_for_load_state("domcontentloaded", timeout=10000)
@@ -248,10 +373,12 @@ class BrightDataCDPScraper(BaseScraper):
             title_element_found = False
 
             try:
-                title_element = await page.query_selector("h1.bfsTitle")
+                title_element = await page.query_selector(selector_to_wait_for)
                 title_element_found = title_element is not None
                 if title_element_found:
-                    logger.info("✅ Found h1.bfsTitle - page appears fully loaded!")
+                    logger.info(
+                        f"✅ Found {selector_to_wait_for} - page appears fully loaded!"
+                    )
             except Exception:
                 pass
 

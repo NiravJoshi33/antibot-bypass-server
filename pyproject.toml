@@ -6,7 +6,7 @@ authors = [
     {name = "Nirav Joshi", email = "niravjoshi3000@gmail.com"},
 ]
 dependencies = ["fastapi[standard]>=0.116.1", "pydantic-settings>=2.10.1", "playwright>=1.54.0"]
-requires-python = "==3.13.*"
+requires-python = ">=3.9"
 readme = "README.md"
 license = {text = "MIT"}
 

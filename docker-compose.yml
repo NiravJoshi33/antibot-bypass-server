@@ -1,0 +1,39 @@
+services:
+  anti-bot-bypass-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: anti-bot-bypass-server
+    ports:
+      - "8000:8000"
+    tmpfs:
+      - /tmp:size=1G,noexec,nosuid,nodev
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_DEBUG=false
+      - BRIGHTDATA_CDP_ENDPOINT=${BRIGHTDATA_CDP_ENDPOINT:-}
+      - DEFAULT_TIMEOUT=30000
+      - MAX_RETRIES=3
+      - PLAYWRIGHT_BROWSERS_PATH=/tmp/playwright
+    volumes:
+      - ./logs:/app/logs
+    user: pwuser
+    init: true
+    ipc: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - anti-bot-network
+
+networks:
+  anti-bot-network:
+    driver: bridge
+
+volumes:
+  logs:
