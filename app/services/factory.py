@@ -2,6 +2,7 @@ from typing import Dict
 from app.services.base import BaseScraper
 from app.services.brightdata import BrightDataCDPScraper
 from app.models import ScraperType
+from app.services.camoufox_scraper import CamoufoxScraper
 
 
 class ScraperFactory:
@@ -18,8 +19,11 @@ class ScraperFactory:
 
         # Initialize BrightData scraper
         brightdata_scraper = BrightDataCDPScraper()
+        camoufox_scraper = CamoufoxScraper()
         await brightdata_scraper.initialize()
+        await camoufox_scraper.initialize()
         cls._scrapers[ScraperType.BRIGHTDATA_CDP] = brightdata_scraper
+        cls._scrapers[ScraperType.CAMOUFOX] = camoufox_scraper
 
         # Add future scrapers here
         # selenium_scraper = SeleniumScraper()

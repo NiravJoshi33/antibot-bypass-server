@@ -14,6 +14,10 @@ class BaseScraper(ABC):
         selector_to_wait_for: Optional[str] = None,
         timeout: int = 30000,
         headless: bool = True,
+        proxy_url: Optional[str] = None,
+        proxy_username: Optional[str] = None,
+        proxy_password: Optional[str] = None,
+        proxy_server: Optional[str] = None,
         **kwargs,
     ) -> ScrapeResponse:
         """Scrape a URL and return structured response"""

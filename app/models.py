@@ -8,6 +8,7 @@ from app.constants.app_data import AppData
 
 class ScraperType(str, Enum):
     BRIGHTDATA_CDP = "brightdata_cdp"
+    CAMOUFOX = "camoufox"
 
 
 class ScrapeRequest(BaseModel):
@@ -18,6 +19,10 @@ class ScrapeRequest(BaseModel):
     headless: bool = True
     headers: Optional[Dict[str, str]] = None
     cookies: Optional[Dict[str, str]] = None
+    proxy_url: Optional[str] = None
+    proxy_username: Optional[str] = None
+    proxy_password: Optional[str] = None
+    proxy_server: Optional[str] = None
 
 
 class ScrapeResponse(BaseModel):
@@ -33,4 +38,4 @@ class ScrapeResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     version: str = AppData.app_version
-    available_scrapers: List[str] = [ScraperType.BRIGHTDATA_CDP]
+    available_scrapers: List[str] = [ScraperType.BRIGHTDATA_CDP, ScraperType.CAMOUFOX]

@@ -37,11 +37,15 @@ class BrightDataCDPScraper(BaseScraper):
         selector_to_wait_for: Optional[str] = None,
         timeout: int = 30000,
         headless: bool = True,
-        max_retries: int = 3,
+        proxy_url: Optional[str] = None,
+        proxy_username: Optional[str] = None,
+        proxy_password: Optional[str] = None,
+        proxy_server: Optional[str] = None,
         **kwargs,
     ) -> ScrapeResponse:
         start_time = time.time()
         retries = 0
+        max_retries = 3
 
         for attempt in range(max_retries + 1):
             try:

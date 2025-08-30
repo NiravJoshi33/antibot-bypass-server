@@ -49,7 +49,10 @@ async def scrape_url(request: ScrapeRequest):
             selector_to_wait_for=request.selector_to_wait_for,
             timeout=request.timeout or settings.DEFAULT_TIMEOUT,
             headless=request.headless,
-            max_retries=settings.MAX_RETRIES,
+            proxy_url=request.proxy_url if request.proxy_url else None,
+            proxy_username=request.proxy_username if request.proxy_username else None,
+            proxy_password=request.proxy_password if request.proxy_password else None,
+            proxy_server=request.proxy_server if request.proxy_server else None,
         )
 
         return result
