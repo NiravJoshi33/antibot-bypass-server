@@ -8,6 +8,7 @@ services:
       - "8001:8000"
     tmpfs:
       - /tmp:size=2G,noexec,nosuid,nodev
+      - /home/pwuser/.cache/camoufox:size=1G
     environment:
       - API_HOST=0.0.0.0
       - API_PORT=8000
@@ -17,9 +18,11 @@ services:
       - MAX_RETRIES=3
       - PLAYWRIGHT_BROWSERS_PATH=/tmp/playwright
       - PYTHONPATH=/app
+      - XDG_CACHE_HOME=/tmp/cache
     volumes:
       - ./logs:/app/logs
       - browser-cache:/tmp/playwright
+      - camoufox-cache:/home/pwuser/.cache/camoufox
     user: pwuser
     init: true
     ipc: host
@@ -49,6 +52,8 @@ networks:
 
 volumes:
   browser-cache:
+    driver: local
+  camoufox-cache:
     driver: local
   logs:
     driver: local

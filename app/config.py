@@ -1,3 +1,4 @@
+import os
 from pydantic import field_validator  # type: ignore[import-not-found]
 from pydantic_settings import BaseSettings  # type: ignore[import-not-found]
 
@@ -11,6 +12,10 @@ class Settings(BaseSettings):
 
     DEFAULT_TIMEOUT: int = 30000
     MAX_RETRIES: int = 3
+
+    # auth
+    API_KEY: str = ""
+    ENABLE_AUTH: bool = os.getenv("ENABLE_AUTH", "false").lower() == "true"
 
     class Config:
         env_file = ".env"

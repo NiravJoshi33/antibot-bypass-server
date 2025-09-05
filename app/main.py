@@ -1,6 +1,7 @@
-from fastapi import FastAPI, HTTPException  # type: ignore[import-not-found]
+from fastapi import Depends, FastAPI, HTTPException  # type: ignore[import-not-found]
 from contextlib import asynccontextmanager
 import logging
+from app.auth import verify_api_key
 from app.models import ScrapeRequest, ScrapeResponse, HealthResponse
 from app.services.factory import ScraperFactory
 from app.config import settings
@@ -39,7 +40,7 @@ async def health_check():
 
 
 @app.post("/scrape", response_model=ScrapeResponse)
-async def scrape_url(request: ScrapeRequest):
+async def scrape_url(request: ScrapeRequest, api_key: str = Depends(verify_api_key)):
     """Scrape a URL using specified scraper service"""
     try:
         scraper = ScraperFactory.get_scraper(request.scraper_type)
@@ -65,7 +66,7 @@ async def scrape_url(request: ScrapeRequest):
 
 
 @app.get("/scrapers")
-async def list_scrapers():
+async def list_scrapers(api_key: str = Depends(verify_api_key)):
     """List available scraper services"""
     return {"available_scrapers": ScraperFactory.get_available_scrapers()}
 
