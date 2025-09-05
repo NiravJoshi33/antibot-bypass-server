@@ -25,8 +25,8 @@ services:
     init: true
     ipc: host
     restart: unless-stopped
-    security_opt:
-      - seccomp:./seccomp_profile.json
+    # security_opt:
+    #   - seccomp:./seccomp_profile.json # for non-root user
     cap_add:
       - SYS_ADMIN
     shm_size: 2gb
