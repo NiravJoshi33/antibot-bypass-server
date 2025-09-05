@@ -8,7 +8,6 @@ services:
       - "8001:8000"
     tmpfs:
       - /tmp:size=2G,noexec,nosuid,nodev
-      - /home/pwuser/.cache/camoufox:size=1G,uid=1001,gid=1001
     environment:
       - API_HOST=0.0.0.0
       - API_PORT=8000
