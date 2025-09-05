@@ -29,8 +29,14 @@ RUN /opt/venv/bin/python -m playwright install-deps
 
 # Copy pre-downloaded Camoufox cache to avoid 707MB download on first request
 # On Linux, Camoufox stores cache in ~/.cache/camoufox
-COPY camoufox_cache/ /home/pwuser/.cache/camoufox/
-RUN chown -R pwuser:pwuser /home/pwuser/.cache/camoufox/
+# Make this optional - if camoufox_cache doesn't exist, create empty directory
+COPY camoufox_cache* /tmp/camoufox_cache_temp/
+RUN mkdir -p /home/pwuser/.cache/camoufox/ && \
+    if [ -d "/tmp/camoufox_cache_temp/camoufox_cache" ]; then \
+        cp -r /tmp/camoufox_cache_temp/camoufox_cache/* /home/pwuser/.cache/camoufox/; \
+    fi && \
+    rm -rf /tmp/camoufox_cache_temp && \
+    chown -R pwuser:pwuser /home/pwuser/.cache/camoufox/
 
 # Copy application code
 COPY app/ ./app/
