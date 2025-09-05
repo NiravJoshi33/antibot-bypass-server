@@ -18,7 +18,7 @@ services:
       - MAX_RETRIES=3
       - PLAYWRIGHT_BROWSERS_PATH=/tmp/playwright
       - PYTHONPATH=/app
-      - XDG_CACHE_HOME=/tmp/cache
+      - XDG_CACHE_HOME=/home/pwuser/.cache
     volumes:
       - ./logs:/app/logs
       - browser-cache:/tmp/playwright
