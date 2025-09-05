@@ -6,12 +6,13 @@ A powerful FastAPI-based web scraping service that bypasses anti-bot measures us
 
 - **Multiple Scraping Backends**: Support for BrightData CDP and Camoufox scrapers
 - **Anti-Bot Bypass**: Advanced techniques to bypass bot detection systems
+- **API Authentication**: Secure Bearer token authentication (optional)
 - **Proxy Support**: Built-in proxy authentication and rotation
 - **Human-like Behavior**: Simulates natural mouse movements and scrolling
 - **Retry Logic**: Automatic retry with exponential backoff
 - **Health Monitoring**: Built-in health checks and monitoring endpoints
 - **Docker Ready**: Fully containerized with Docker and Docker Compose
-- **Security Focused**: Runs with non-root user and seccomp profiles
+- **Security Focused**: Runs with non-root user and security profiles
 - **RESTful API**: Clean REST API with comprehensive documentation
 
 ## 🏗️ Architecture
@@ -92,7 +93,7 @@ docker-compose down
 Check if the service is running:
 
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8001/health
 ```
 
 Expected response:
@@ -109,8 +110,8 @@ Expected response:
 
 ### Interactive API Documentation
 
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+- **Swagger UI**: http://localhost:8001/docs
+- **ReDoc**: http://localhost:8001/redoc
 
 ### Core Endpoints
 
@@ -131,6 +132,7 @@ GET /scrapers
 ```http
 POST /scrape
 Content-Type: application/json
+Authorization: Bearer your_api_key_here
 
 {
   "url": "https://example.com",
@@ -138,26 +140,40 @@ Content-Type: application/json
   "selector_to_wait_for": "h1.title",
   "timeout": 30000,
   "headless": true,
+  "headers": {
+    "User-Agent": "Custom User Agent"
+  },
+  "cookies": {
+    "session": "abc123"
+  },
   "proxy_server": "proxy.example.com:8080",
   "proxy_username": "username",
-  "proxy_password": "password"
+  "proxy_password": "password",
+  "proxy_url": "http://proxy.example.com:8080"
 }
 ```
+
+**Note**: The `Authorization` header is only required if authentication is enabled (see configuration section).
 
 ## 🛠️ Configuration
 
 ### Environment Variables
 
-| Variable                  | Description                  | Default   | Required |
-| ------------------------- | ---------------------------- | --------- | -------- |
-| `API_HOST`                | API server host              | `0.0.0.0` | No       |
-| `API_PORT`                | API server port              | `8000`    | No       |
-| `API_DEBUG`               | Enable debug mode            | `false`   | No       |
-| `BRIGHTDATA_CDP_ENDPOINT` | BrightData CDP endpoint      | -         | Yes\*    |
-| `DEFAULT_TIMEOUT`         | Default request timeout (ms) | `30000`   | No       |
-| `MAX_RETRIES`             | Maximum retry attempts       | `3`       | No       |
+| Variable                   | Description                   | Default           | Required |
+| -------------------------- | ----------------------------- | ----------------- | -------- |
+| `API_HOST`                 | API server host               | `0.0.0.0`         | No       |
+| `API_PORT`                 | API server port               | `8000`            | No       |
+| `API_DEBUG`                | Enable debug mode             | `false`           | No       |
+| `BRIGHTDATA_CDP_ENDPOINT`  | BrightData CDP endpoint       | -                 | Yes\*    |
+| `DEFAULT_TIMEOUT`          | Default request timeout (ms)  | `30000`           | No       |
+| `MAX_RETRIES`              | Maximum retry attempts        | `3`               | No       |
+| `ENABLE_AUTH`              | Enable API key authentication | `false`           | No       |
+| `API_KEY`                  | API key for authentication    | -                 | Yes\*\*  |
+| `PLAYWRIGHT_BROWSERS_PATH` | Browser installation path     | `/tmp/playwright` | No       |
+| `XDG_CACHE_HOME`           | Cache directory path          | `/app/cache`      | No       |
 
-\*Required only if using BrightData scraper
+\*Required only if using BrightData scraper  
+\*\*Required only if `ENABLE_AUTH=true`
 
 ### Scraper Types
 
@@ -211,8 +227,8 @@ The Dockerfile supports the following build arguments:
 
 ### Security Features
 
-- **Non-root user**: Runs as `pwuser` for security
-- **Seccomp profile**: Restricts system calls
+- **API Authentication**: Optional Bearer token authentication
+- **Security profiles**: Configurable security restrictions
 - **Resource limits**: Memory and CPU constraints
 - **Network isolation**: Custom Docker network
 
@@ -226,8 +242,8 @@ The Dockerfile supports the following build arguments:
 
 ### Container Security
 
-- Runs with non-root user (`pwuser`)
-- Seccomp security profile enabled
+- Optional API key authentication
+- Configurable security profiles
 - Minimal attack surface with specific capability grants
 - Resource limits to prevent DoS
 
@@ -271,9 +287,15 @@ docker-compose logs --since="1h" anti-bot-bypass-server
 # Check if BRIGHTDATA_CDP_ENDPOINT is set
 docker-compose exec anti-bot-bypass-server env | grep BRIGHTDATA
 
-# Test connectivity
-curl -X POST http://localhost:8000/scrape \
+# Test connectivity (without auth)
+curl -X POST http://localhost:8001/scrape \
   -H "Content-Type: application/json" \
+  -d '{"url": "https://httpbin.org/ip", "scraper_type": "brightdata_cdp"}'
+
+# Test connectivity (with auth)
+curl -X POST http://localhost:8001/scrape \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your_api_key_here" \
   -d '{"url": "https://httpbin.org/ip", "scraper_type": "brightdata_cdp"}'
 ```
 
@@ -283,8 +305,8 @@ curl -X POST http://localhost:8000/scrape \
 # Check browser dependencies
 docker-compose exec anti-bot-bypass-server playwright install-deps
 
-# Verify seccomp profile
-docker-compose logs anti-bot-bypass-server | grep seccomp
+# Check container logs for errors
+docker-compose logs anti-bot-bypass-server
 ```
 
 #### 3. Memory Issues

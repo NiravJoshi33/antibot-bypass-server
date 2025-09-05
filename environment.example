@@ -8,6 +8,12 @@ API_HOST=0.0.0.0
 API_PORT=8000
 API_DEBUG=false
 
+# Authentication Configuration (Optional)
+# Set ENABLE_AUTH=true to require API key authentication
+ENABLE_AUTH=false
+# Required if ENABLE_AUTH=true - generate a secure random string
+API_KEY=your_secure_api_key_here
+
 # BrightData Configuration (Required for BrightData scraper)
 # Get this from your BrightData dashboard
 BRIGHTDATA_CDP_ENDPOINT=wss://your-brightdata-endpoint-here
@@ -18,6 +24,9 @@ MAX_RETRIES=3
 
 # Browser Configuration
 PLAYWRIGHT_BROWSERS_PATH=/tmp/playwright
+
+# Cache Configuration
+XDG_CACHE_HOME=/app/cache
 
 # Optional: Proxy Configuration (can be overridden per request)
 # PROXY_SERVER=proxy.example.com:8080
