@@ -54,3 +54,5 @@ logs/
 *.log
 .env.local
 .env.production
+
+camoufox_cache/

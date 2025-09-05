@@ -1,0 +1,25 @@
+# =================================
+# Anti-Bot Bypass Server Configuration
+# =================================
+# Copy this file to .env and update the values
+
+# API Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
+API_DEBUG=false
+
+# BrightData Configuration (Required for BrightData scraper)
+# Get this from your BrightData dashboard
+BRIGHTDATA_CDP_ENDPOINT=wss://your-brightdata-endpoint-here
+
+# Scraping Configuration
+DEFAULT_TIMEOUT=30000
+MAX_RETRIES=3
+
+# Browser Configuration
+PLAYWRIGHT_BROWSERS_PATH=/tmp/playwright
+
+# Optional: Proxy Configuration (can be overridden per request)
+# PROXY_SERVER=proxy.example.com:8080
+# PROXY_USERNAME=your_username
+# PROXY_PASSWORD=your_password

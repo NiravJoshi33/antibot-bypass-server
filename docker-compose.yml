@@ -5,9 +5,9 @@ services:
       dockerfile: Dockerfile
     container_name: anti-bot-bypass-server
     ports:
-      - "8000:8000"
+      - "8001:8000"
     tmpfs:
-      - /tmp:size=1G,noexec,nosuid,nodev
+      - /tmp:size=2G,noexec,nosuid,nodev
     environment:
       - API_HOST=0.0.0.0
       - API_PORT=8000
@@ -16,12 +16,19 @@ services:
       - DEFAULT_TIMEOUT=30000
       - MAX_RETRIES=3
       - PLAYWRIGHT_BROWSERS_PATH=/tmp/playwright
+      - PYTHONPATH=/app
     volumes:
       - ./logs:/app/logs
+      - browser-cache:/tmp/playwright
     user: pwuser
     init: true
     ipc: host
     restart: unless-stopped
+    # security_opt:
+    #   - seccomp:./seccomp_profile.json
+    cap_add:
+      - SYS_ADMIN
+    shm_size: 2gb
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -30,10 +37,18 @@ services:
       start_period: 40s
     networks:
       - anti-bot-network
+    labels:
+      - "com.docker.compose.project=anti-bot-bypass-server"
+      - "service.name=anti-bot-bypass-server"
+      - "service.version=0.1.0"
 
 networks:
   anti-bot-network:
     driver: bridge
+    name: anti-bot-network
 
 volumes:
+  browser-cache:
+    driver: local
   logs:
+    driver: local
