@@ -44,13 +44,30 @@ COPY app/ ./app/
 # Copy seccomp profile for security
 COPY seccomp_profile.json ./
 
+# Create entrypoint script to fix permissions at runtime
+RUN cat > /entrypoint.sh << 'EOF'
+#!/bin/bash
+# Fix permissions for volume mounts that might override build-time permissions
+mkdir -p /home/pwuser/.cache/camoufox
+chown -R pwuser:pwuser /home/pwuser/.cache/camoufox
+chmod -R 755 /home/pwuser/.cache/camoufox
+
+# Switch to pwuser and execute the command
+exec su-exec pwuser "$@"
+EOF
+
+RUN chmod +x /entrypoint.sh
+
 # Create necessary directories and set permissions
 RUN mkdir -p /app/logs && \
     chown -R pwuser:pwuser /app && \
     chmod -R 755 /app
 
-# Switch to non-root user
-USER pwuser
+# Install su-exec for secure user switching
+RUN apt-get update && apt-get install -y su-exec && rm -rf /var/lib/apt/lists/*
+
+# Don't switch to pwuser here - let entrypoint handle it
+# USER pwuser
 
 # Expose port
 EXPOSE 8000
@@ -59,5 +76,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run the application
+# Use entrypoint to fix permissions, then run as pwuser
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["pdm", "run", "python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
