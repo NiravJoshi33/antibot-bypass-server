@@ -43,8 +43,8 @@ COPY app/ ./app/
 COPY seccomp_profile.json ./
 
 # Create necessary directories
-RUN mkdir -p /app/logs /home/pwuser/.cache/camoufox
-RUN chmod -R 777 /home/pwuser/.cache/camoufox /app/logs
+RUN mkdir -p /app/logs /app/cache/camoufox
+RUN chmod -R 777 /app/cache/camoufox /app/logs
 
 # Stay as root - no USER directive
 
