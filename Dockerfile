@@ -45,16 +45,14 @@ COPY app/ ./app/
 COPY seccomp_profile.json ./
 
 # Create entrypoint script to fix permissions at runtime
-RUN cat > /entrypoint.sh << 'EOF'
-#!/bin/bash
-# Fix permissions for volume mounts that might override build-time permissions
-mkdir -p /home/pwuser/.cache/camoufox
-chown -R pwuser:pwuser /home/pwuser/.cache/camoufox
-chmod -R 755 /home/pwuser/.cache/camoufox
-
-# Switch to pwuser and execute the command
-exec su-exec pwuser "$@"
-EOF
+RUN echo '#!/bin/bash\n\
+# Fix permissions for volume mounts that might override build-time permissions\n\
+mkdir -p /home/pwuser/.cache/camoufox\n\
+chown -R pwuser:pwuser /home/pwuser/.cache/camoufox\n\
+chmod -R 755 /home/pwuser/.cache/camoufox\n\
+\n\
+# Switch to pwuser and execute the command\n\
+exec su-exec pwuser "$@"' > /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh
 
