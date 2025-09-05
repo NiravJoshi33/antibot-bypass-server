@@ -52,17 +52,17 @@ chown -R pwuser:pwuser /home/pwuser/.cache/camoufox\n\
 chmod -R 755 /home/pwuser/.cache/camoufox\n\
 \n\
 # Switch to pwuser and execute the command\n\
-exec su-exec pwuser "$@"' > /entrypoint.sh
+exec gosu pwuser "$@"' > /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh
+
+# Install gosu for secure user switching (Ubuntu equivalent of su-exec)
+RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
 
 # Create necessary directories and set permissions
 RUN mkdir -p /app/logs && \
     chown -R pwuser:pwuser /app && \
     chmod -R 755 /app
-
-# Install su-exec for secure user switching
-RUN apt-get update && apt-get install -y su-exec && rm -rf /var/lib/apt/lists/*
 
 # Don't switch to pwuser here - let entrypoint handle it
 # USER pwuser
