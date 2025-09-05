@@ -28,15 +28,13 @@ RUN /opt/venv/bin/pip install playwright
 RUN /opt/venv/bin/python -m playwright install-deps
 
 # Copy pre-downloaded Camoufox cache to avoid 707MB download on first request
-# On Linux, Camoufox stores cache in ~/.cache/camoufox
 # Make this optional - if camoufox_cache doesn't exist, create empty directory
 COPY camoufox_cache* /tmp/camoufox_cache_temp/
 RUN mkdir -p /home/pwuser/.cache/camoufox/ && \
     if [ -d "/tmp/camoufox_cache_temp/camoufox_cache" ]; then \
         cp -r /tmp/camoufox_cache_temp/camoufox_cache/* /home/pwuser/.cache/camoufox/; \
     fi && \
-    rm -rf /tmp/camoufox_cache_temp && \
-    chown -R pwuser:pwuser /home/pwuser/.cache/camoufox/
+    rm -rf /tmp/camoufox_cache_temp
 
 # Copy application code
 COPY app/ ./app/
@@ -44,28 +42,11 @@ COPY app/ ./app/
 # Copy seccomp profile for security
 COPY seccomp_profile.json ./
 
-# Create entrypoint script to fix permissions at runtime
-RUN echo '#!/bin/bash\n\
-# Fix permissions for volume mounts that might override build-time permissions\n\
-mkdir -p /home/pwuser/.cache/camoufox\n\
-chown -R pwuser:pwuser /home/pwuser/.cache/camoufox\n\
-chmod -R 755 /home/pwuser/.cache/camoufox\n\
-\n\
-# Switch to pwuser and execute the command\n\
-exec gosu pwuser "$@"' > /entrypoint.sh
+# Create necessary directories
+RUN mkdir -p /app/logs /home/pwuser/.cache/camoufox
+RUN chmod -R 777 /home/pwuser/.cache/camoufox /app/logs
 
-RUN chmod +x /entrypoint.sh
-
-# Install gosu for secure user switching (Ubuntu equivalent of su-exec)
-RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
-
-# Create necessary directories and set permissions
-RUN mkdir -p /app/logs && \
-    chown -R pwuser:pwuser /app && \
-    chmod -R 755 /app
-
-# Don't switch to pwuser here - let entrypoint handle it
-# USER pwuser
+# Stay as root - no USER directive
 
 # Expose port
 EXPOSE 8000
@@ -74,6 +55,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Use entrypoint to fix permissions, then run as pwuser
-ENTRYPOINT ["/entrypoint.sh"]
+# Run the application as root
 CMD ["pdm", "run", "python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
