@@ -33,6 +33,7 @@ class ScrapeResponse(BaseModel):
     execution_time: float
     scraper_used: ScraperType
     retries_attempted: int
+    cookies: Optional[Dict[str, str]] = None  
 
 
 class HealthResponse(BaseModel):

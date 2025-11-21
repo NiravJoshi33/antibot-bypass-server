@@ -4,7 +4,7 @@ import random
 import time
 from camoufox.async_api import AsyncCamoufox
 from playwright.async_api import Browser, Page, ViewportSize
-from typing import Optional
+from typing import Optional, Tuple, Dict
 from app.models import ScraperType, ScrapeResponse
 from app.services.base import BaseScraper
 
@@ -47,7 +47,7 @@ class CamoufoxScraper(BaseScraper):
 
         for attempt in range(max_retries + 1):
             try:
-                content = await self._scrape_with_camoufox(
+                content, cookies = await self._scrape_with_camoufox(
                     url,
                     selector_to_wait_for,
                     timeout,
@@ -74,6 +74,7 @@ class CamoufoxScraper(BaseScraper):
                 return ScrapeResponse(
                     success=True,
                     html=content,
+                    cookies=cookies,
                     content_length=content_length,
                     execution_time=execution_time,
                     scraper_used=self.name,
@@ -107,7 +108,7 @@ class CamoufoxScraper(BaseScraper):
         proxy_username: Optional[str] = None,
         proxy_password: Optional[str] = None,
         proxy_server: Optional[str] = None,
-    ) -> str:
+    ) -> Tuple[str, Dict[str, str]]:
         """Scrape with proper Camoufox usage and typing"""
 
         if proxy_server and proxy_username and proxy_password:
@@ -170,9 +171,12 @@ class CamoufoxScraper(BaseScraper):
 
             # Get final content
             content = await page.content()
-            logger.info(f"Retrieved {len(content)} characters from {url}")
+            cookies_list = await page.context.cookies()
+            cookies_dict = {cookie['name']: cookie['value'] for cookie in cookies_list}
+            
+            logger.info(f"Retrieved {len(content)} chars from {url}. Cookies: {len(cookies_dict)}")
 
-            return content
+            return content, cookies_dict
 
         finally:
             # Always close browser

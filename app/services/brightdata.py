@@ -2,7 +2,7 @@ import asyncio
 import logging
 import random
 import time
-from typing import Optional
+from typing import Optional, Tuple, Dict
 from playwright.async_api import Playwright, async_playwright, ViewportSize  # type: ignore[import-not-found]
 from app.config import settings
 from app.models import ScrapeResponse, ScraperType
@@ -49,7 +49,8 @@ class BrightDataCDPScraper(BaseScraper):
 
         for attempt in range(max_retries + 1):
             try:
-                content = await self._scrape_with_brightdata_cdp(
+
+                content, cookies = await self._scrape_with_brightdata_cdp(
                     url, selector_to_wait_for, timeout, headless
                 )
 
@@ -69,6 +70,7 @@ class BrightDataCDPScraper(BaseScraper):
                 return ScrapeResponse(
                     success=True,
                     html=content,
+                    cookies=cookies,
                     content_length=content_length,
                     execution_time=execution_time,
                     scraper_used=self.name,
@@ -110,7 +112,7 @@ class BrightDataCDPScraper(BaseScraper):
         selector_to_wait_for: Optional[str] = None,
         timeout: int = 30000,
         headless: bool = True,
-    ) -> str:
+    ) -> Tuple[str, Dict[str, str]]:
         if not self.playwright:
             raise ValueError("Playwright not initialized")
 
@@ -296,10 +298,13 @@ class BrightDataCDPScraper(BaseScraper):
                     page, selector_to_wait_for, timeout
                 )
 
-            content_length = len(content)
-            logger.info(f"✅ Content length: {content_length} characters")
+            cookies_list = await page.context.cookies()
+            cookies_dict = {cookie['name']: cookie['value'] for cookie in cookies_list}
 
-            return content
+            content_length = len(content)
+            logger.info(f"✅ Content length: {content_length} characters, cookies captured: {len(cookies_dict)}")
+
+            return content, cookies_dict
 
         finally:
             await browser.close()
