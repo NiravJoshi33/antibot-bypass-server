@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Literal
 from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, HttpUrl  # type: ignore[import-not-found]
@@ -23,6 +23,7 @@ class ScrapeRequest(BaseModel):
     proxy_username: Optional[str] = None
     proxy_password: Optional[str] = None
     proxy_server: Optional[str] = None
+    wait_until: Literal["domcontentloaded", "load", "networkidle", "commit"] = "networkidle"
 
 
 class ScrapeResponse(BaseModel):

@@ -41,6 +41,7 @@ class BrightDataCDPScraper(BaseScraper):
         proxy_username: Optional[str] = None,
         proxy_password: Optional[str] = None,
         proxy_server: Optional[str] = None,
+        wait_until: str = "networkidle",
         **kwargs,
     ) -> ScrapeResponse:
         start_time = time.time()
@@ -51,7 +52,7 @@ class BrightDataCDPScraper(BaseScraper):
             try:
 
                 content, cookies = await self._scrape_with_brightdata_cdp(
-                    url, selector_to_wait_for, timeout, headless
+                    url, selector_to_wait_for, timeout, headless, wait_until
                 )
 
                 execution_time = time.time() - start_time
@@ -112,6 +113,7 @@ class BrightDataCDPScraper(BaseScraper):
         selector_to_wait_for: Optional[str] = None,
         timeout: int = 30000,
         headless: bool = True,
+        wait_until: str = "networkidle",
     ) -> Tuple[str, Dict[str, str]]:
         if not self.playwright:
             raise ValueError("Playwright not initialized")
@@ -147,7 +149,9 @@ class BrightDataCDPScraper(BaseScraper):
             await page.wait_for_timeout(random_delay * 1000)
 
             logger.info(f"Navigating to {url}")
-            await page.goto(url, timeout=timeout, wait_until="networkidle")
+            # await page.goto(url, timeout=timeout, wait_until="networkidle")
+            print(f"logging wait_until: {wait_until}")
+            await page.goto(url, timeout=timeout, wait_until=wait_until)
             await page.wait_for_timeout(5000)
 
             if selector_to_wait_for:

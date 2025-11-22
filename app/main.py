@@ -54,6 +54,7 @@ async def scrape_url(request: ScrapeRequest, api_key: str = Depends(verify_api_k
             proxy_username=request.proxy_username if request.proxy_username else None,
             proxy_password=request.proxy_password if request.proxy_password else None,
             proxy_server=request.proxy_server if request.proxy_server else None,
+            wait_until=request.wait_until,
         )
 
         return result
