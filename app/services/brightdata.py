@@ -10,6 +10,7 @@ from app.services.base import BaseScraper
 
 logger = logging.getLogger(__name__)
 
+BRIGHTDATA_SEMAPHORE = asyncio.Semaphore(50)
 
 class BrightDataCDPScraper(BaseScraper):
     def __init__(self) -> None:
@@ -51,7 +52,8 @@ class BrightDataCDPScraper(BaseScraper):
         for attempt in range(max_retries + 1):
             try:
 
-                content, cookies = await self._scrape_with_brightdata_cdp(
+                async with BRIGHTDATA_SEMAPHORE:
+                    content, cookies = await self._scrape_with_brightdata_cdp(
                     url, selector_to_wait_for, timeout, headless, wait_until
                 )
 

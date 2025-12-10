@@ -10,6 +10,7 @@ from app.services.base import BaseScraper
 
 logger = logging.getLogger(__name__)
 
+BROWSER_SEMAPHORE = asyncio.Semaphore(5)
 
 class CamoufoxScraper(BaseScraper):
     def __init__(self) -> None:
@@ -47,16 +48,17 @@ class CamoufoxScraper(BaseScraper):
 
         for attempt in range(max_retries + 1):
             try:
-                content, cookies = await self._scrape_with_camoufox(
-                    url,
-                    selector_to_wait_for,
-                    timeout,
-                    headless,
-                    proxy_url,
-                    proxy_username,
-                    proxy_password,
-                    proxy_server,
-                )
+                async with BROWSER_SEMAPHORE:
+                    content, cookies = await self._scrape_with_camoufox(
+                        url,
+                        selector_to_wait_for,
+                        timeout,
+                        headless,
+                        proxy_url,
+                        proxy_username,
+                        proxy_password,
+                        proxy_server,
+                    )
 
                 execution_time = time.time() - start_time
                 content_length = len(content) if content else 0
@@ -136,6 +138,12 @@ class CamoufoxScraper(BaseScraper):
         try:
             # Create new page
             page: Page = await browser.new_page()
+
+            # Block images, media, fonts, and stylesheets
+            await page.route("**/*", lambda route: route.abort() 
+                if route.request.resource_type in ["image", "media", "font", "stylesheet"] 
+                else route.continue_()
+            )
 
             # Set viewport
             await page.set_viewport_size(
