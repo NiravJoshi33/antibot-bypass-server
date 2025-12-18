@@ -125,70 +125,68 @@ class CamoufoxScraper(BaseScraper):
             proxy = None
             geoip = False
 
-        # Create fresh Camoufox instance for each scrape
-        camoufox = AsyncCamoufox(
+        async with AsyncCamoufox(
             headless=headless,
             proxy=proxy,
             geoip=geoip,
-        )
+        ) as browser:
 
-        # Start browser - this returns a Browser instance
-        browser: Browser = await camoufox.start()
-
-        try:
-            # Create new page
+            # Create a new page
             page: Page = await browser.new_page()
 
-            # Block images, media, fonts, and stylesheets
-            await page.route("**/*", lambda route: route.abort() 
-                if route.request.resource_type in ["image", "media", "font", "stylesheet"] 
-                else route.continue_()
-            )
-
-            # Set viewport
-            await page.set_viewport_size(
-                viewport_size=ViewportSize(width=1920, height=1080)
-            )
-
-            # Add stealth scripts
-            await page.add_init_script("""
-                Object.defineProperty(navigator, 'webdriver', {
-                    get: () => undefined,
-                });
-            """)
-
-            # Navigate to URL
-            logger.info(f"Navigating to {url}")
             try:
-                await page.goto(url, timeout=timeout, wait_until="networkidle")
-            except Exception as e:
-                logger.warning(f"networkidle failed, trying domcontentloaded: {e}")
-                await page.goto(url, timeout=timeout, wait_until="domcontentloaded")
-                await page.wait_for_timeout(3000)  # Wait 3 seconds after DOM loads
 
-            # Wait for specific selector if provided
-            if selector_to_wait_for:
+                # Block images, media, fonts, and stylesheets
+                await page.route("**/*", lambda route: route.abort() 
+                    if route.request.resource_type in ["image", "media", "font", "stylesheet"] 
+                    else route.continue_()
+                )
+
+                # Set viewport
+                await page.set_viewport_size(
+                    viewport_size=ViewportSize(width=1920, height=1080)
+                )
+
+                # Add stealth scripts
+                await page.add_init_script("""
+                    Object.defineProperty(navigator, 'webdriver', {
+                        get: () => undefined,
+                    });
+                """)
+
+                # Navigate to URL
+                logger.info(f"Navigating to {url}")
                 try:
-                    await page.wait_for_selector(selector_to_wait_for, timeout=timeout)
-                    logger.info(f"Found selector: {selector_to_wait_for}")
+                    await page.goto(url, timeout=timeout, wait_until="networkidle")
                 except Exception as e:
-                    logger.warning(f"Selector {selector_to_wait_for} not found: {e}")
+                    logger.warning(f"networkidle failed, trying domcontentloaded: {e}")
+                    await page.goto(url, timeout=timeout, wait_until="domcontentloaded")
+                    await page.wait_for_timeout(3000)  # Wait 3 seconds after DOM loads
 
-            # Simulate human behavior
-            await self._simulate_human_behavior(page)
+                # Wait for specific selector if provided
+                if selector_to_wait_for:
+                    try:
+                        await page.wait_for_selector(selector_to_wait_for, timeout=timeout)
+                        logger.info(f"Found selector: {selector_to_wait_for}")
+                    except Exception as e:
+                        logger.warning(f"Selector {selector_to_wait_for} not found: {e}")
 
-            # Get final content
-            content = await page.content()
-            cookies_list = await page.context.cookies()
-            cookies_dict = {cookie['name']: cookie['value'] for cookie in cookies_list}
-            
-            logger.info(f"Retrieved {len(content)} chars from {url}. Cookies: {len(cookies_dict)}")
+                # Simulate human behavior
+                await self._simulate_human_behavior(page)
 
-            return content, cookies_dict
+                # Get final content
+                content = await page.content()
+                cookies_list = await page.context.cookies()
+                cookies_dict = {cookie['name']: cookie['value'] for cookie in cookies_list}
+                
+                logger.info(f"Retrieved {len(content)} chars from {url}. Cookies: {len(cookies_dict)}")
 
-        finally:
-            # Always close browser
-            await browser.close()
+                return content, cookies_dict
+
+            finally:
+                #  optionally close the page
+                if page:
+                    await page.close()
 
     async def _simulate_human_behavior(self, page: Page) -> None:
         """Simulate human-like behavior"""
