@@ -39,6 +39,7 @@ class CamoufoxScraper(BaseScraper):
         proxy_username: Optional[str] = None,
         proxy_password: Optional[str] = None,
         proxy_server: Optional[str] = None,
+        cookies: Optional[Dict[str, str]] = None,
         **kwargs,
     ) -> ScrapeResponse:
         start_time = time.time()
@@ -58,6 +59,7 @@ class CamoufoxScraper(BaseScraper):
                         proxy_username,
                         proxy_password,
                         proxy_server,
+                        cookies,
                     )
 
                 execution_time = time.time() - start_time
@@ -110,6 +112,7 @@ class CamoufoxScraper(BaseScraper):
         proxy_username: Optional[str] = None,
         proxy_password: Optional[str] = None,
         proxy_server: Optional[str] = None,
+        cookies: Optional[Dict[str, str]] = None,
     ) -> Tuple[str, Dict[str, str]]:
         """Scrape with proper Camoufox usage and typing"""
 
@@ -135,6 +138,17 @@ class CamoufoxScraper(BaseScraper):
             page: Page = await browser.new_page()
 
             try:
+
+                if cookies:
+                    formatted_cookies = []
+                    for name, value in cookies.items():
+                        formatted_cookies.append({
+                            'name': name,
+                            'value': value,
+                            'url': url 
+                        })
+                    await page.context.add_cookies(formatted_cookies)
+                    logger.info(f"Injected {len(cookies)} cookies into Camoufox")
 
                 # Block images, media, fonts, and stylesheets
                 await page.route("**/*", lambda route: route.abort() 
